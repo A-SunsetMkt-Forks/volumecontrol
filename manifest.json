@@ -23,7 +23,7 @@
     }
   ],
   "commands": {
-    "_execute_browser_action": {
+    "browser_action": {
       "description": "Open volume control"
     }
   },
