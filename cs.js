@@ -22,7 +22,10 @@ function log(message, level = tc.settings.defaultLogLevel) {
 function connectOutput(element) {
   log("Begin connectOutput", 5);
   log(`Element found ${element.toString()}`, 5);
-  tc.vars.audioCtx.createMediaElementSource(element).connect(tc.vars.gainNode);
+  if (!element.mediaElementSource) {
+    element.mediaElementSource = tc.vars.audioCtx.createMediaElementSource(element);
+    element.mediaElementSource.connect(tc.vars.gainNode);
+  }
   tc.vars.gainNode.connect(tc.vars.audioCtx.destination);
   log("End connectOutput", 5);
 }
@@ -118,8 +121,10 @@ function initWhenReady(document) {
   log("End initWhenReady", 5);
 }
 
+const browserApi = (typeof browser !== 'undefined') ? browser : chrome;
+
 function checkExclusion() {
-  browser.storage.local.get({ fqdns: [] }).then(data => {
+  browserApi.storage.local.get({ fqdns: [] }).then(data => {
       const currentFqdn = new URL(window.location.href).hostname;
       const normalizedFqdn = currentFqdn.startsWith("www.") ? currentFqdn : "www." + currentFqdn;
       if (data.fqdns.includes(normalizedFqdn)) {
@@ -169,22 +174,22 @@ document.getElementById('fqdnList').addEventListener('click', function(e) {
 });
 
 function addFqdn(fqdn) {
-  browser.storage.local.get({ fqdns: [] })
+  browserApi.storage.local.get({ fqdns: [] })
       .then(data => {
           const { fqdns } = data;
           if (!fqdns.includes(fqdn)) {
               fqdns.push(fqdn);
-              browser.storage.local.set({ fqdns }).then(updateFqdnList);
+              browserApi.storage.local.set({ fqdns }).then(updateFqdnList);
           }
       });
 }
 
 function removeFqdn(index, fqdn) {
-  browser.storage.local.get({ fqdns: [] })
+  browserApi.storage.local.get({ fqdns: [] })
       .then(data => {
           const { fqdns } = data;
           fqdns.splice(index, 1); 
-          return browser.storage.local.set({ fqdns });
+          return browserApi.storage.local.set({ fqdns });
       })
       .then(() => {
           updateFqdnList(); 
@@ -199,20 +204,22 @@ function isValidURL(urlString) {
 }
 
 function updateFqdnList() {
-  browser.storage.local.get({ fqdns: [] }).then(data => {
+  browserApi.storage.local.get({ fqdns: [] }).then(data => {
       const fqdnList = document.getElementById('fqdnList');
-      fqdnList.innerHTML = '';
-      data.fqdns.forEach((fqdn, index) => { 
-          const entry = document.createElement('div');
-          entry.classList.add('fqdn-entry');
-          entry.textContent = fqdn;
-          entry.dataset.index = index; 
-          const removeButton = document.createElement('span');
-          removeButton.classList.add('remove-entry');
-          removeButton.textContent = 'x';
-          entry.appendChild(removeButton);
-          fqdnList.appendChild(entry);
-      });
+      if (fqdnList) {
+          fqdnList.innerHTML = '';
+          data.fqdns.forEach((fqdn, index) => { 
+              const entry = document.createElement('div');
+              entry.classList.add('fqdn-entry');
+              entry.textContent = fqdn;
+              entry.dataset.index = index; 
+              const removeButton = document.createElement('span');
+              removeButton.classList.add('remove-entry');
+              removeButton.textContent = 'x';
+              entry.appendChild(removeButton);
+              fqdnList.appendChild(entry);
+          });
+      }
   });
 }
 

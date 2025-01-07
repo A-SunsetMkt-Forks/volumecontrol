@@ -1,12 +1,13 @@
 document.addEventListener('DOMContentLoaded', () => {
   function settings() {
-    browser.runtime.openOptionsPage().catch((error) => {
+    window.open('options.html').catch((error) => {
       console.error('Error opening options page:', error);
     });
   }
   
   document.getElementById('settings').addEventListener('click', settings);
 });
+
 function listenForEvents() {
   let currentVolume = 0;
 
@@ -28,8 +29,11 @@ function listenForEvents() {
     currentVolume = dB;
     browserApi.tabs.query({ active: true, currentWindow: true })
       .then(tabs => {
-        browserApi.tabs.sendMessage(tabs[0].id, { command: "setVolume", dB })
-          .catch(err);
+        if (tabs[0]) {
+          return browserApi.tabs.sendMessage(tabs[0].id, { command: "setVolume", dB });
+        } else {
+          throw new Error("No active tab found.");
+        }
       })
       .catch(err);
   }
@@ -63,8 +67,11 @@ function listenForEvents() {
     const mono = monoCheckbox.checked;
     browserApi.tabs.query({ active: true, currentWindow: true })
       .then(tabs => {
-        browserApi.tabs.sendMessage(tabs[0].id, { command: "setMono", mono })
-          .catch(err);
+        if (tabs[0]) {
+          return browserApi.tabs.sendMessage(tabs[0].id, { command: "setMono", mono });
+        } else {
+          throw new Error("No active tab found.");
+        }
       })
       .catch(err);
   }
